@@ -30,6 +30,7 @@ target_link_libraries(earth_ui
         Qt5::Widgets
         Qt5::Gui
         earth_core
+        osgEarth::osgEarth
         OpenSceneGraph::osgViewer
         OpenSceneGraph::osgGA
 )

@@ -2,8 +2,17 @@
 
 #include <QOpenGLFunctions>
 #include <QOpenGLWidget>
+#include <QTimer>
 #include <osg/ref_ptr>
 #include <osgViewer/CompositeViewer>
+
+class QHideEvent;
+class QShowEvent;
+
+namespace osgViewer {
+class View;
+class GraphicsWindowEmbedded;
+}
 
 namespace earth::core {
 class SimulationBootstrapper;
@@ -12,7 +21,7 @@ class SimulationBootstrapper;
 namespace earth::ui {
 
 /**
- * @brief Qt与osgEarth之间的桥接窗口，负责驱动三维场景刷新。
+ * @brief ʹ��QOpenGLWidget ��osgEarth��Ⱦ���ڲ�ͬ���� Qt UI �о������Ӵ��ڡ�
  */
 class SceneWidget : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
@@ -21,31 +30,31 @@ public:
     explicit SceneWidget(QWidget* parent = nullptr);
 
     /**
-     * @brief 绑定场景引导器，使窗口能够访问场景根节点。
+     * @brief ���ӻ����������� scene graph ���ڿ����滮ˢ�¡�
      */
     void setSimulation(core::SimulationBootstrapper* bootstrapper);
 
 protected:
-    /**
-     * @brief 初始化OpenGL上下文并搭建osgViewer。
-     */
     void initializeGL() override;
-
-    /**
-     * @brief 刷新渲染帧或在无场景时清屏。
-     */
     void paintGL() override;
-
-    /**
-     * @brief 根据窗口尺寸调整摄像机视口。
-     */
     void resizeGL(int w, int h) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
+
+private slots:
+    void onFrame();
 
 private:
-    void configureView(int width, int height);
+    void initializeViewer();
+    void applySceneData();
+    void updateCamera(int width, int height) const;
 
     core::SimulationBootstrapper* m_bootstrapper = nullptr;
     osg::ref_ptr<osgViewer::CompositeViewer> m_viewer;
+    osg::ref_ptr<osgViewer::View> m_view;
+    osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> m_graphicsWindow;
+    QTimer m_frameTimer;
+    bool m_viewerInitialized = false;
 };
 
 } // namespace earth::ui
