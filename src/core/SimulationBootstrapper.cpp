@@ -1,9 +1,6 @@
 #include "core/SimulationBootstrapper.h"
 
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
-#include <QStandardPaths>
+#include "core/EnvironmentBootstrapper.h"
 #include <algorithm>
 #include <osg/Geode>
 #include <osg/Shape>
@@ -21,64 +18,6 @@
 
 namespace earth::core {
 namespace {
-constexpr const char* kMoonResourcePath = ":/env/moon_1024x512.jpg";
-constexpr const char* kMoonFileName = "moon_1024x512.jpg";
-
-QString resolveWritableDataRoot() {
-    QString baseDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-    if (baseDir.isEmpty()) {
-        baseDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-    }
-    if (baseDir.isEmpty()) {
-        baseDir = QDir::tempPath();
-    }
-    if (baseDir.isEmpty()) {
-        return {};
-    }
-    QDir dir(baseDir);
-    if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
-        return {};
-    }
-    return dir.absolutePath();
-}
-
-std::string copyResourceFile(const QString& resourcePath, const QString& fileName) {
-    QFile resourceFile(resourcePath);
-    if (!resourceFile.exists()) {
-        return {};
-    }
-
-    const QString baseDir = resolveWritableDataRoot();
-    if (baseDir.isEmpty()) {
-        return {};
-    }
-
-    QDir dir(baseDir);
-    const QString targetPath = dir.filePath(fileName);
-    QFileInfo targetInfo(targetPath);
-
-    if (targetInfo.exists() && targetInfo.size() == resourceFile.size()) {
-        return QDir::toNativeSeparators(targetPath).toStdString();
-    }
-
-    if (!resourceFile.open(QIODevice::ReadOnly)) {
-        return {};
-    }
-
-    QFile targetFile(targetPath);
-    if (!targetFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        return {};
-    }
-
-    targetFile.write(resourceFile.readAll());
-    targetFile.close();
-    resourceFile.close();
-    return QDir::toNativeSeparators(targetPath).toStdString();
-}
-
-std::string ensureMoonTextureAvailable() {
-    return copyResourceFile(QString::fromLatin1(kMoonResourcePath), QString::fromLatin1(kMoonFileName));
-}
 } // namespace
 
 SimulationBootstrapper::SimulationBootstrapper()
@@ -91,6 +30,7 @@ SimulationBootstrapper::SimulationBootstrapper()
 }
 
 void SimulationBootstrapper::initialize() {
+    EnvironmentBootstrapper::instance().initialize();
     buildSceneGraph();
     m_cachedRunwayMask = buildRunwayMask(128);
 }
@@ -184,7 +124,7 @@ std::unique_ptr<osgEarth::SkyOptions> SimulationBootstrapper::buildSkyOptions(co
         configureCommon(*options);
         options->setDriver("simple");
 
-        const std::string moonPath = ensureMoonTextureAvailable();
+        const std::string moonPath = EnvironmentBootstrapper::instance().moonTextureFile();
         if (!moonPath.empty()) {
             options->moonImageURI() = osgEarth::URI(moonPath);
         }

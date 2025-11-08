@@ -1,12 +1,14 @@
 set(EARTH_SOURCE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(earth_core STATIC
+    core/EnvironmentBootstrapper.cpp
     core/SimulationBootstrapper.cpp
 )
 target_include_directories(earth_core PUBLIC ${EARTH_SOURCE_ROOT})
 target_link_libraries(earth_core
     PUBLIC
         Qt5::Core
+        Qt5::Gui
         OpenCV::opencv_core
         OpenCV::opencv_imgproc
         osgEarth::osgEarth
