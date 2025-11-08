@@ -1,0 +1,35 @@
+## 环境配置
+D:\osgearth-3.7.2\install\bin
+D:\osgearth-3.7.2\install\lib
+D:\osgearth-3.7.2\vcpkg_installed\x64-windows\bin
+D:\osgearth-3.7.2\vcpkg_installed\x64-windows\plugins\osgPlugins-3.6.5
+D:\osgearth-3.7.2\vcpkg_installed\x64-windows\lib
+## 转换影像数据为mbtiles
+osgearth_conv --in driver GDALImage --in url .\world2-img.tif --out driver MBTilesImage --out filename world8-img.mbtiles --out format jpg --min-level 0 --max-level 0
+osgearth_conv --in driver GDALImage --in url .\world3-img.tif --out driver MBTilesImage --out filename world8-img.mbtiles --out format jpg --min-level 1 --max-level 1
+osgearth_conv --in driver GDALImage --in url .\world4-img.tif --out driver MBTilesImage --out filename world8-img.mbtiles --out format jpg --min-level 2 --max-level 2
+osgearth_conv --in driver GDALImage --in url .\world5-img.tif --out driver MBTilesImage --out filename world8-img.mbtiles --out format jpg --min-level 3 --max-level 3
+osgearth_conv --in driver GDALImage --in url .\world6-img.tif --out driver MBTilesImage --out filename world8-img.mbtiles --out format jpg --min-level 4 --max-level 4
+osgearth_conv --in driver GDALImage --in url .\world7-img.tif --out driver MBTilesImage --out filename world8-img.mbtiles --out format jpg --min-level 5 --max-level 5
+osgearth_conv --in driver GDALImage --in url .\world8-img.tif --out driver MBTilesImage --out filename world8-img.mbtiles --out format jpg --min-level 6 --max-level 6
+## 转换高程数据为mbtiles
+osgearth_conv --in driver gdalelevation --in url .\world10-ele.tif --in vdatum egm96 --out driver mbtileselevation --out filename world10-ele.mbtiles --out format tiff
+
+## earth中绘制shp
+  <OGRFeatures name="world-data">
+    <url>./features/世界国界/世界地图国家.shp</url>
+  </OGRFeatures>
+  
+  <FeatureModel name="World Boundaries" features="world-data" pickable="true">  
+      <styles>
+          <style type="text/css">
+              features {
+                  stroke:rgb(57, 78, 219);  /* 黄色边界 */
+                  stroke-width: 3px;
+                  stroke-tessellation-size: 1km;
+                  render-lighting: false;
+                  altitude-clamping: terrain-drape;        
+              }            
+          </style>
+      </styles>
+  </FeatureModel>

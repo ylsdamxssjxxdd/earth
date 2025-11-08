@@ -1,0 +1,45 @@
+编译流程（在 PowerShell 中执行）：
+
+1. 前置条件：
+   - 安装 Visual Studio 2022（含“使用 C++ 的桌面开发”组件）。
+   - 安装 CMake 并保证 `cmake` 命令可用。
+   - 将 vcpkg 安装到 `C:\vcpkg`，并运行一次 `bootstrap-vcpkg.bat`。
+
+2. 进入工程根目录，例如：
+   ```powershell
+   cd D:\osgearth-3.7.2
+   ```
+
+3. 安装/同步 vcpkg 依赖（基于 `vcpkg.json` 清单）：
+   ```powershell
+   vcpkg install --triplet x64-windows
+   ```
+
+4. 生成 CMake 构建文件并指定 vcpkg 清单模式与安装目录：
+   ```powershell
+   cmake -S . -B build `
+         -G "Visual Studio 17 2022" `
+         -A x64 `
+         -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+         -DCMAKE_INSTALL_PREFIX=install `
+         -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
+         -DVCPKG_MANIFEST_MODE=ON `
+         -DVCPKG_MANIFEST_DIR=D:/osgearth-3.7.2 `
+         -DVCPKG_INSTALLED_DIR=D:/osgearth-3.7.2/vcpkg_installed `
+         -DVCPKG_TARGET_TRIPLET=x64-windows
+   ```
+   如需重新配置，请先删除 `build/` 目录（`Remove-Item -Recurse -Force build`）。
+
+5. 编译并安装：
+   ```powershell
+   cmake --build build --target INSTALL --config RelWithDebInfo
+   ```
+
+6. 结果将输出到：
+   - 可执行文件与 DLL：`build\...\RelWithDebInfo\`
+   - 安装产物（头文件、库、插件等）：`install\`
+
+附加说明：
+- 如需 Debug 配置，将步骤 4 中的 `-DCMAKE_BUILD_TYPE` 与步骤 5 的 `--config` 均改为 `Debug`。
+- MSVC 可能提示 C4828 编码警告，可忽略或将相关源码转换为 UTF-8（无 BOM）。
+- 若切换到新的 vcpkg triplet 或安装路径，请相应更新命令中的目录参数。
