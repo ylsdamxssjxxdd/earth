@@ -22,7 +22,6 @@ add_library(earth_ui STATIC
     ui/MainWindow.cpp
     ui/MainWindow.ui
     ui/SceneWidget.cpp
-    ../resource/ui_resources.qrc
 )
 target_include_directories(earth_ui PUBLIC ${EARTH_SOURCE_ROOT})
 target_link_libraries(earth_ui
@@ -39,6 +38,7 @@ earth_apply_target_defaults(earth_ui)
 
 add_executable(airport_earth
     app/main.cpp
+    ../resource/ui_resources.qrc
 )
 target_include_directories(airport_earth PRIVATE ${EARTH_SOURCE_ROOT})
 target_link_libraries(airport_earth PRIVATE earth_ui Qt5::Widgets)
