@@ -13,6 +13,10 @@ class QWheelEvent;
 class QKeyEvent;
 class QPoint;
 
+namespace osgEarth {
+class SkyNode;
+}
+
 namespace osgViewer {
 class View;
 class GraphicsWindowEmbedded;
@@ -24,29 +28,33 @@ class SimulationBootstrapper;
 
 namespace earth::ui {
 
-
+/**
+ * @brief 基于 QOpenGLWidget 嵌入 osgEarth 场景的渲染窗口，负责桥接 Qt 事件与 osgViewer。
+ */
 class SceneWidget : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
 
 public:
     explicit SceneWidget(QWidget* parent = nullptr);
 
-
+    /**
+     * @brief 安装仿真引导器，SceneWidget 会自动更新 scene graph 与环境设置。
+     */
     void setSimulation(core::SimulationBootstrapper* bootstrapper);
 
     /**
-     * @brief 重置视图到Home视点（EarthManipulator的home位置）。
+     * @brief 恢复 EarthManipulator 的 Home 视点，便于回到初始俯瞰角度。
      */
     void home();
 
 signals:
     /**
-     * @brief 鼠标地理位置变化信号：经度(lon)、纬度(lat)、高程(height, 米)。
+     * @brief 鼠标拾取到新的经纬高时发出的信号（单位：度/米）。
      */
     void mouseGeoPositionChanged(double lon, double lat, double height);
 
 protected:
-    // Qt事件桥接到osgViewer，开启鼠标/键盘操控
+    // Qt 事件桥接到 osgViewer，开启鼠标/键盘操控
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -68,8 +76,11 @@ private:
     void applySceneData();
     void updateCamera(int width, int height) const;
     /**
-     * @brief 将屏幕坐标拾取为地理坐标。
-     * @return 成功则返回true并输出经纬高
+     * @brief 负责把 SkyNode 与嵌入式 viewer 对齐，确保星空/大气环境生效。
+     */
+    void configureEnvironment();
+    /**
+     * @brief 将屏幕坐标转换为经纬高，便于状态栏展示。
      */
     bool computeGeoAt(const QPoint& pos, double& lon, double& lat, double& height) const;
 
@@ -78,13 +89,15 @@ private:
     osg::ref_ptr<osgViewer::View> m_view;
     osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> m_graphicsWindow;
     QTimer m_frameTimer;
-    // 追踪鼠标拖拽状态以定制右键缩放行为（将右拖动转译为滚轮缩放，避免跳变）
+    // 追踪鼠标拖拽状态以便自定义右键拖拽缩放行为
     Qt::MouseButtons m_buttonsDown{};
     QPoint m_lastPos{};
     bool m_zoomDragActive = false;
     bool m_viewerInitialized = false;
+    const osgEarth::SkyNode* m_lastAttachedSky = nullptr;
 };
 
 } // namespace earth::ui
 
 using SceneWidget = earth::ui::SceneWidget;
+

@@ -203,24 +203,19 @@ bool MainWindow::loadEarthFile(const QString& filePath) {
         return false;
     }
     
-    // 清除现有场景内容
-    osg::Group* root = m_bootstrapper->sceneRoot();
-    if (!root) {
+    if (!m_bootstrapper->applyExternalScene(node.get())) {
         return false;
     }
     
-    root->removeChildren(0, root->getNumChildren());
-    
-    // 添加新的MapNode到场景
-    root->addChild(node);
-    
-    // 更新场景视图并回到Home视点
+    // 更新场景并把视图重置到Home参考点
     if (m_ui->openGLWidget) {
+        m_ui->openGLWidget->setSimulation(m_bootstrapper.get());
         m_ui->openGLWidget->home();
         m_ui->openGLWidget->update();
     }
     
     return true;
 }
+
 
 } // namespace earth::ui

@@ -12,6 +12,7 @@
 #include <osgEarth/Common>
 #include <osgEarth/EarthManipulator>
 #include <osgEarth/ExampleResources>
+#include <osgEarth/Sky>
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/GraphicsWindow>
 #include <osgViewer/View>
@@ -68,6 +69,7 @@ SceneWidget::SceneWidget(QWidget* parent)
 
 void SceneWidget::setSimulation(core::SimulationBootstrapper* bootstrapper) {
     m_bootstrapper = bootstrapper;
+    m_lastAttachedSky = nullptr;
     applySceneData();
 }
 
@@ -295,9 +297,9 @@ void SceneWidget::keyPressEvent(QKeyEvent* event) {
                 } else {
                     const int code = mapQtKeyToOsg(event->key());
                     if (code != 0) {
-                        qDebug() << "[KeyPress]" << event->key()
-                                 << " autoRepeat=" << event->isAutoRepeat()
-                                 << " lastMouse(" << m_lastPos.x() << "," << m_lastPos.y() << ")";
+                        // qDebug() << "[KeyPress]" << event->key()
+                        //          << " autoRepeat=" << event->isAutoRepeat()
+                        //          << " lastMouse(" << m_lastPos.x() << "," << m_lastPos.y() << ")";
                         eq->keyPress(code);
                     }
                 }
@@ -444,7 +446,11 @@ void SceneWidget::applySceneData() {
         m_view->setSceneData(m_bootstrapper->sceneRoot());
     } else {
         m_view->setSceneData(nullptr);
+        m_lastAttachedSky = nullptr;
+        return;
     }
+
+    configureEnvironment();
 }
 
 void SceneWidget::updateCamera(int width, int height) const {
@@ -467,6 +473,23 @@ void SceneWidget::updateCamera(int width, int height) const {
         camera->setViewport(0, 0, pixelW, pixelH);
         const double aspect = static_cast<double>(pixelW) / static_cast<double>(pixelH);
         camera->setProjectionMatrixAsPerspective(30.0, aspect, kNearPlane, kFarPlane);
+    }
+}
+
+void SceneWidget::configureEnvironment() {
+    if (!m_bootstrapper || !m_view.valid()) {
+        return;
+    }
+
+    osgEarth::SkyNode* sky = m_bootstrapper->skyNode();
+    if (!sky) {
+        m_lastAttachedSky = nullptr;
+        return;
+    }
+
+    if (sky != m_lastAttachedSky) {
+        sky->attach(m_view.get(), 0);
+        m_lastAttachedSky = sky;
     }
 }
 

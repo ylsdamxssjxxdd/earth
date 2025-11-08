@@ -62,5 +62,7 @@
     <file alias="visibleanalysis.png">icon/visibleanalysis.png</file>
     <file alias="visiblearea.png">icon/visiblearea.png</file>
   </qresource>
+  <qresource prefix="/env">
+    <file>moon_1024x512.jpg</file>
+  </qresource>
 </RCC>
-
