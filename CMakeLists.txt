@@ -14,12 +14,60 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(EarthProjectOptions)
 include(EarthCompilerConfig)
 
+function(earth_log_dependency_paths dependency_name)
+    message(STATUS "---- ${dependency_name} 依赖路径 ----")
+    foreach(var IN LISTS ARGN)
+        if(DEFINED ${var})
+            set(_value "${${var}}")
+            if(_value STREQUAL "")
+                set(_value "<空字符串>")
+            endif()
+            string(REPLACE ";" ", " _pretty_value "${_value}")
+            message(STATUS "  ${var}: ${_pretty_value}")
+        else()
+            message(STATUS "  ${var}: <未设置>")
+        endif()
+    endforeach()
+endfunction()
+
 earth_collect_feature_definitions(EARTH_FEATURE_DEFINITIONS)
 
 find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
 find_package(OpenSceneGraph REQUIRED COMPONENTS osg osgDB osgGA osgUtil osgViewer)
 find_package(osgEarth REQUIRED)
+
+earth_log_dependency_paths("Qt5"
+    Qt5_DIR
+    Qt5Core_DIR
+    Qt5Gui_DIR
+    Qt5Widgets_DIR
+)
+
+earth_log_dependency_paths("OpenCV"
+    OpenCV_DIR
+)
+
+earth_log_dependency_paths("OpenSceneGraph"
+    OPENSCENEGRAPH_VERSION
+    OSG_INCLUDE_DIR
+    OSG_LIBRARY_DEBUG
+    OSG_LIBRARY_RELEASE
+    OSGDB_LIBRARY_DEBUG
+    OSGDB_LIBRARY_RELEASE
+    OSGGA_LIBRARY_DEBUG
+    OSGGA_LIBRARY_RELEASE
+    OSGUTIL_LIBRARY_DEBUG
+    OSGUTIL_LIBRARY_RELEASE
+    OSGVIEWER_LIBRARY_DEBUG
+    OSGVIEWER_LIBRARY_RELEASE
+    OPENTHREADS_LIBRARY_DEBUG
+    OPENTHREADS_LIBRARY_RELEASE
+)
+
+earth_log_dependency_paths("osgEarth"
+    osgEarth_DIR
+)
 
 add_subdirectory(src)
 
