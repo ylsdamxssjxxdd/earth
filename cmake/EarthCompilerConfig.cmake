@@ -1,0 +1,13 @@
+function(earth_apply_target_defaults target_name)
+    if(NOT TARGET ${target_name})
+        message(FATAL_ERROR "earth_apply_target_defaults: target ${target_name} 不存在")
+    endif()
+
+    if(MSVC)
+        target_compile_options(${target_name} PRIVATE /W4 /permissive- /Zc:__cplusplus /utf-8)
+        target_compile_definitions(${target_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion)
+        target_compile_options(${target_name} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden>)
+    endif()
+endfunction()
