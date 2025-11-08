@@ -7,6 +7,11 @@
 #include <QList>
 #include <QStatusBar>
 #include <QString>
+#include <QFileDialog>
+#include <QMessageBox>
+
+#include <osgEarth/MapNode>
+#include <osgDB/ReadFile>
 
 #include "ui_MainWindow.h"
 
@@ -40,6 +45,9 @@ void MainWindow::initializeSimulation() {
 }
 
 void MainWindow::registerActionHandlers() {
+    // 为AddEarth动作添加特殊处理，连接到openEarthFile槽函数
+    connect(m_ui->AddEarth, &QAction::triggered, this, &MainWindow::openEarthFile);
+    
     const QList<QAction*> actions = {
         m_ui->SetLosHeight,
         m_ui->ViewshedPara,
@@ -70,7 +78,6 @@ void MainWindow::registerActionHandlers() {
         m_ui->Snow,
         m_ui->Cloud,
         m_ui->AddElevation,
-        m_ui->AddEarth,
         m_ui->VisibilityAnalysis,
         m_ui->ViewshedAnalysis,
         m_ui->RadarAnalysis,
@@ -126,6 +133,69 @@ void MainWindow::handleActionTriggered(QAction* action, bool checked) {
                 .arg(checked ? tr("开启") : tr("关闭")),
             4000);
     }
+}
+
+void MainWindow::openEarthFile() {
+    // 打开文件对话框，让用户选择.earth文件
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        tr("打开Earth文件"),
+        QString(),  // 默认目录
+        tr("Earth文件 (*.earth);;所有文件 (*.*)")
+    );
+    
+    if (filePath.isEmpty()) {
+        return;  // 用户取消了选择
+    }
+    
+    // 尝试加载.earth文件
+    if (loadEarthFile(filePath)) {
+        if (auto* sb = statusBar()) {
+            sb->showMessage(tr("已成功加载Earth文件: %1").arg(filePath), 5000);
+        }
+    } else {
+        QMessageBox::warning(
+            this,
+            tr("加载失败"),
+            tr("无法加载Earth文件: %1").arg(filePath)
+        );
+    }
+}
+
+bool MainWindow::loadEarthFile(const QString& filePath) {
+    if (!m_bootstrapper) {
+        return false;
+    }
+    
+    // 使用osgDB读取.earth文件
+    osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(filePath.toStdString());
+    if (!node) {
+        return false;
+    }
+    
+    // 尝试将节点转换为MapNode
+    osgEarth::MapNode* mapNode = osgEarth::MapNode::findMapNode(node);
+    if (!mapNode) {
+        return false;
+    }
+    
+    // 清除现有场景内容
+    osg::Group* root = m_bootstrapper->sceneRoot();
+    if (!root) {
+        return false;
+    }
+    
+    root->removeChildren(0, root->getNumChildren());
+    
+    // 添加新的MapNode到场景
+    root->addChild(node);
+    
+    // 更新场景视图
+    if (m_ui->openGLWidget) {
+        m_ui->openGLWidget->update();
+    }
+    
+    return true;
 }
 
 } // namespace earth::ui

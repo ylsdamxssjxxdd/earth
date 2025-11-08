@@ -2,8 +2,10 @@
 
 #include <QMainWindow>
 #include <memory>
+#include <QString>
 
 class QAction;
+class QFileDialog;
 
 namespace Ui {
 class EarthMainWindow;
@@ -28,6 +30,12 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
 
+private slots:
+    /**
+     * @brief 处理打开.earth文件的菜单动作
+     */
+    void openEarthFile();
+
 private:
     /**
      * @brief 构建仿真场景并更新状态栏提示信息。
@@ -48,6 +56,13 @@ private:
      * @brief 统一处理动作触发事件并展示当前状态。
      */
     void handleActionTriggered(QAction* action, bool checked);
+
+    /**
+     * @brief 加载指定的.earth文件到场景中
+     * @param filePath .earth文件的路径
+     * @return 是否加载成功
+     */
+    bool loadEarthFile(const QString& filePath);
 
     std::unique_ptr<Ui::EarthMainWindow> m_ui;
     std::unique_ptr<core::SimulationBootstrapper> m_bootstrapper;
