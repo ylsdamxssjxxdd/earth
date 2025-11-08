@@ -49,3 +49,5 @@ private:
 };
 
 } // namespace earth::ui
+
+using SceneWidget = earth::ui::SceneWidget;

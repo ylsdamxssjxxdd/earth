@@ -1,8 +1,8 @@
 #include "core/SimulationBootstrapper.h"
 
 #include <algorithm>
-#include <osg/Box>
 #include <osg/Geode>
+#include <osg/Shape>
 #include <osg/ShapeDrawable>
 #include <osg/Vec3>
 #include <osgEarth/MapNode>

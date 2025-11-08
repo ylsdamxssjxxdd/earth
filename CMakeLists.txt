@@ -13,6 +13,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(EarthProjectOptions)
 include(EarthCompilerConfig)
+include(EarthDependencyTargets)
 
 function(earth_log_dependency_paths dependency_name)
     message(STATUS "---- ${dependency_name} 依赖路径 ----")
@@ -36,6 +37,9 @@ find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
 find_package(OpenSceneGraph REQUIRED COMPONENTS osg osgDB osgGA osgUtil osgViewer)
 find_package(osgEarth REQUIRED)
+
+earth_ensure_opencv_components(core imgproc)
+earth_ensure_osg_components(osg osgDB osgGA osgUtil osgViewer OpenThreads)
 
 earth_log_dependency_paths("Qt5"
     Qt5_DIR
