@@ -6,6 +6,7 @@
 
 class QAction;
 class QFileDialog;
+class QLabel;
 
 namespace Ui {
 class EarthMainWindow;
@@ -66,6 +67,7 @@ private:
 
     std::unique_ptr<Ui::EarthMainWindow> m_ui;
     std::unique_ptr<core::SimulationBootstrapper> m_bootstrapper;
+    QLabel* m_coordLabel = nullptr;
 };
 
 } // namespace earth::ui

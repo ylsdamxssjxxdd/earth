@@ -32,6 +32,7 @@ target_link_libraries(earth_ui
         osgEarth::osgEarth
         OpenSceneGraph::osgViewer
         OpenSceneGraph::osgGA
+        OpenSceneGraph::osgUtil
 )
 target_compile_definitions(earth_ui PUBLIC ${EARTH_FEATURE_DEFINITIONS})
 earth_apply_target_defaults(earth_ui)
@@ -41,7 +42,12 @@ add_executable(airport_earth
     ../resource/ui_resources.qrc
 )
 target_include_directories(airport_earth PRIVATE ${EARTH_SOURCE_ROOT})
-target_link_libraries(airport_earth PRIVATE earth_ui Qt5::Widgets)
+target_link_libraries(airport_earth PRIVATE
+    earth_ui
+    Qt5::Widgets
+    OpenCV::opencv_core
+    OpenCV::opencv_imgproc
+)
 target_compile_definitions(airport_earth PRIVATE ${EARTH_FEATURE_DEFINITIONS})
 earth_apply_target_defaults(airport_earth)
 set_target_properties(airport_earth PROPERTIES OUTPUT_NAME airport-earth)

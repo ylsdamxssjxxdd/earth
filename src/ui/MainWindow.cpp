@@ -9,6 +9,7 @@
 #include <QString>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QLabel>
 
 #include <osgEarth/MapNode>
 #include <osgDB/ReadFile>
@@ -41,6 +42,29 @@ void MainWindow::initializeSimulation() {
 
     if (auto* sb = statusBar()) {
         sb->showMessage(tr("场景骨架已装载，可通过菜单触发各项功能。"));
+    }
+
+    // 创建状态栏经纬度/高程显示，并连接SceneWidget鼠标地理位置信号
+    if (!m_coordLabel) {
+        m_coordLabel = new QLabel(this);
+        m_coordLabel->setObjectName(QStringLiteral("coordLabel"));
+        m_coordLabel->setMinimumWidth(320);
+        m_coordLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        m_coordLabel->setText(tr("经度: ---, 纬度: ---, 高: ---"));
+        if (auto* sb2 = statusBar()) {
+            sb2->addPermanentWidget(m_coordLabel, 0);
+        }
+    }
+    if (m_ui->openGLWidget) {
+        connect(m_ui->openGLWidget, &SceneWidget::mouseGeoPositionChanged, this,
+                [this](double lon, double lat, double height) {
+                    if (!m_coordLabel) return;
+                    m_coordLabel->setText(
+                        tr("经度: %1°, 纬度: %2°, 高: %3 m")
+                            .arg(QString::number(lon, 'f', 6))
+                            .arg(QString::number(lat, 'f', 6))
+                            .arg(QString::number(height, 'f', 1)));
+                });
     }
 }
 
@@ -190,8 +214,9 @@ bool MainWindow::loadEarthFile(const QString& filePath) {
     // 添加新的MapNode到场景
     root->addChild(node);
     
-    // 更新场景视图
+    // 更新场景视图并回到Home视点
     if (m_ui->openGLWidget) {
+        m_ui->openGLWidget->home();
         m_ui->openGLWidget->update();
     }
     

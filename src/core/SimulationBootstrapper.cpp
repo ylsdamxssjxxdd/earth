@@ -48,19 +48,25 @@ void SimulationBootstrapper::buildSceneGraph() {
 }
 
 cv::Mat SimulationBootstrapper::buildRunwayMask(int resolution) const {
+    // 仅使用OpenCV Core的ROI操作，避免依赖imgproc（rectangle/line），从而跨Debug/Release配置稳定链接
     cv::Mat mask(resolution, resolution, CV_8UC1, cv::Scalar(0));
 
     const int runwayWidth = resolution / 10;
     const cv::Rect runwayRect(resolution / 4, (resolution - runwayWidth) / 2, resolution / 2, runwayWidth);
-    cv::rectangle(mask, runwayRect, cv::Scalar(255), cv::FILLED);
 
+    // 跑道主体（白色）
+    cv::Mat roiRunway = mask(runwayRect);
+    roiRunway.setTo(cv::Scalar(255));
+
+    // 中心线（灰色），使用更窄的水平ROI来模拟
     const int centerLineThickness = std::max(1, runwayWidth / 8);
-    cv::line(mask,
-             cv::Point(runwayRect.x, runwayRect.y + runwayRect.height / 2),
-             cv::Point(runwayRect.x + runwayRect.width, runwayRect.y + runwayRect.height / 2),
-             cv::Scalar(128),
-             centerLineThickness,
-             cv::LINE_AA);
+    const int centerY = runwayRect.y + runwayRect.height / 2 - centerLineThickness / 2;
+    cv::Rect centerRect(runwayRect.x, std::max(0, centerY), runwayRect.width, centerLineThickness);
+    centerRect &= cv::Rect(0, 0, mask.cols, mask.rows); // 裁剪到图像边界
+    if (centerRect.width > 0 && centerRect.height > 0) {
+        cv::Mat roiCenter = mask(centerRect);
+        roiCenter.setTo(cv::Scalar(128));
+    }
 
     return mask;
 }
