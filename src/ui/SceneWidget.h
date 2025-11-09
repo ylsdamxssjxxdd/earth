@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QPointer>
 #include <QTimer>
 #include <QWidget>
@@ -57,6 +58,10 @@ signals:
      * @brief 鼠标拾取新的经纬度时发出信号，单位为度/米。
      */
     void mouseGeoPositionChanged(double lon, double lat, double height);
+    /**
+     * @brief 渲染帧率统计更新时发出信号，单位为 FPS。
+     */
+    void frameRateChanged(double fps);
 
 protected:
     void showEvent(QShowEvent* event) override;
@@ -72,6 +77,8 @@ private:
     void ensureGraphicsWindow();
     void applySceneData();
     void updateCamera(int width, int height) const;
+    void updateFrameRateMetrics();
+    void resetFrameStats();
     /**
      * @brief 将 SkyNode 等环境节点装载进 viewer，确保昼夜/大气等效果正常。
      */
@@ -90,6 +97,9 @@ private:
     QTimer m_frameTimer;
     bool m_viewerInitialized = false;
     const osgEarth::SkyNode* m_lastAttachedSky = nullptr;
+    QElapsedTimer m_fpsTimer;
+    int m_frameCounter = 0;
+    double m_lastReportedFps = 0.0;
 };
 
 } // namespace earth::ui

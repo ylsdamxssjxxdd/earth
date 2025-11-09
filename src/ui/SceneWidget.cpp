@@ -89,6 +89,7 @@ void SceneWidget::hideEvent(QHideEvent* event) {
     if (m_frameTimer.isActive()) {
         m_frameTimer.stop();
     }
+    resetFrameStats();
 }
 
 void SceneWidget::resizeEvent(QResizeEvent* event) {
@@ -111,10 +112,17 @@ bool SceneWidget::eventFilter(QObject* watched, QEvent* event) {
 
 void SceneWidget::onFrame() {
     if (!isVisible() || !m_viewerInitialized || !m_viewer.valid() || !m_graphicsWindow.valid()) {
+        resetFrameStats();
         return;
     }
 
+    if (!m_fpsTimer.isValid()) {
+        m_fpsTimer.start();
+        m_frameCounter = 0;
+    }
+
     m_viewer->frame();
+    updateFrameRateMetrics();
 }
 
 void SceneWidget::initializeViewer() {
@@ -244,6 +252,40 @@ void SceneWidget::updateCamera(int width, int height) const {
             const double aspect = static_cast<double>(pixelW) / static_cast<double>(pixelH);
             camera->setProjectionMatrixAsPerspective(30.0, aspect, kNearPlane, kFarPlane);
         }
+    }
+}
+
+void SceneWidget::updateFrameRateMetrics() {
+    if (!m_fpsTimer.isValid()) {
+        return;
+    }
+
+    ++m_frameCounter;
+    const qint64 elapsedMs = m_fpsTimer.elapsed();
+    if (elapsedMs < 250) {
+        return;
+    }
+
+    const double elapsedSec = static_cast<double>(elapsedMs) / 1000.0;
+    const double fps = elapsedSec > 0.0 ? static_cast<double>(m_frameCounter) / elapsedSec : 0.0;
+
+    if (!qFuzzyCompare(1.0 + fps, 1.0 + m_lastReportedFps)) {
+        emit frameRateChanged(fps);
+        m_lastReportedFps = fps;
+    }
+
+    m_frameCounter = 0;
+    m_fpsTimer.restart();
+}
+
+void SceneWidget::resetFrameStats() {
+    m_frameCounter = 0;
+    if (m_fpsTimer.isValid()) {
+        m_fpsTimer.invalidate();
+    }
+    if (!qFuzzyCompare(1.0 + m_lastReportedFps, 1.0)) {
+        m_lastReportedFps = 0.0;
+        emit frameRateChanged(0.0);
     }
 }
 

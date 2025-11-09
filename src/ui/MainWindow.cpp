@@ -55,6 +55,16 @@ void MainWindow::initializeSimulation() {
             sb2->addPermanentWidget(m_coordLabel, 0);
         }
     }
+    if (!m_fpsLabel) {
+        m_fpsLabel = new QLabel(this);
+        m_fpsLabel->setObjectName(QStringLiteral("fpsLabel"));
+        m_fpsLabel->setMinimumWidth(120);
+        m_fpsLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        m_fpsLabel->setText(tr("帧率: -- FPS"));
+        if (auto* sb2 = statusBar()) {
+            sb2->addPermanentWidget(m_fpsLabel, 0);
+        }
+    }
     if (m_ui->openGLWidget) {
         connect(m_ui->openGLWidget, &SceneWidget::mouseGeoPositionChanged, this,
                 [this](double lon, double lat, double height) {
@@ -64,6 +74,16 @@ void MainWindow::initializeSimulation() {
                             .arg(QString::number(lon, 'f', 6))
                             .arg(QString::number(lat, 'f', 6))
                             .arg(QString::number(height, 'f', 1)));
+                });
+        connect(m_ui->openGLWidget, &SceneWidget::frameRateChanged, this,
+                [this](double fps) {
+                    if (!m_fpsLabel) return;
+                    if (fps <= 0.0) {
+                        m_fpsLabel->setText(tr("帧率: -- FPS"));
+                    } else {
+                        m_fpsLabel->setText(
+                            tr("帧率: %1 FPS").arg(QString::number(fps, 'f', 1)));
+                    }
                 });
     }
 }

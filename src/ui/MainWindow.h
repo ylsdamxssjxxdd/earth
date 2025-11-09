@@ -68,6 +68,7 @@ private:
     std::unique_ptr<Ui::EarthMainWindow> m_ui;
     std::unique_ptr<core::SimulationBootstrapper> m_bootstrapper;
     QLabel* m_coordLabel = nullptr;
+    QLabel* m_fpsLabel = nullptr;
 };
 
 } // namespace earth::ui
