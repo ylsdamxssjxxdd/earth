@@ -1327,7 +1327,7 @@ QWidget{
  <customwidgets>
   <customwidget>
    <class>SceneWidget</class>
-   <extends>QOpenGLWidget</extends>
+   <extends>QWidget</extends>
    <header>ui/SceneWidget.h</header>
   </customwidget>
  </customwidgets>

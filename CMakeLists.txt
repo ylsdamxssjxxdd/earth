@@ -33,7 +33,7 @@ endfunction()
 
 earth_collect_feature_definitions(EARTH_FEATURE_DEFINITIONS)
 
-find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Widgets OpenGL)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
 find_package(OpenSceneGraph REQUIRED COMPONENTS osg osgDB osgGA osgUtil osgViewer)
 find_package(osgEarth REQUIRED)
@@ -46,6 +46,7 @@ earth_log_dependency_paths("Qt5"
     Qt5Core_DIR
     Qt5Gui_DIR
     Qt5Widgets_DIR
+    Qt5OpenGL_DIR
 )
 
 earth_log_dependency_paths("OpenCV"

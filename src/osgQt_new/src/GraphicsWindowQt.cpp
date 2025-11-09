@@ -535,14 +535,22 @@ bool GraphicsWindowQt::init( QWidget* parent, const QGLWidget* shareWidget, Qt::
                 shareWidget = sharedContextQt->getGLWidget();
         }
 
-        // WindowFlags
-        Qt::WindowFlags flags = f | Qt::Window | Qt::CustomizeWindowHint;
-        if ( _traits->windowDecoration )
-            flags |= Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowSystemMenuHint
+        // WindowFlags: if we embed into an existing QWidget, avoid Qt::Window so it behaves like a child widget.
+        Qt::WindowFlags flags = f;
+        if (parent)
+        {
+            flags |= Qt::Widget;
+        }
+        else
+        {
+            flags |= Qt::Window | Qt::CustomizeWindowHint;
+            if ( _traits->windowDecoration )
+                flags |= Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowSystemMenuHint
 #if (QT_VERSION_CHECK(4, 5, 0) <= QT_VERSION)
-                | Qt::WindowCloseButtonHint
+                    | Qt::WindowCloseButtonHint
 #endif
-                ;
+                    ;
+        }
 
         // create widget
         _widget = new GLWidget( traits2qglFormat( _traits.get() ), parent, shareWidget, flags );
