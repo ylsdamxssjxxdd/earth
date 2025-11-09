@@ -1,0 +1,68 @@
+if(DEFINED EARTH_DEPENDENCY_TARGETS_INCLUDED)
+    return()
+endif()
+set(EARTH_DEPENDENCY_TARGETS_INCLUDED TRUE)
+
+function(earth_ensure_osg_components)
+    foreach(component IN LISTS ARGN)
+        set(found FALSE)
+        string(TOUPPER "${component}" upper_component)
+        string(REGEX REPLACE "[^A-Z0-9_]" "" upper_component "${upper_component}")
+
+        if(TARGET OpenSceneGraph::${component})
+            set(found TRUE)
+        endif()
+
+        foreach(prefix IN ITEMS OPENSCENEGRAPH OSG)
+            set(var_name "${prefix}_${upper_component}_LIBRARY")
+            if(DEFINED ${var_name})
+                set(value "${${var_name}}")
+                if(NOT "${value}" STREQUAL "")
+                    set(found TRUE)
+                endif()
+            endif()
+        endforeach()
+
+        if(NOT found)
+            foreach(var_name IN ITEMS OPENSCENEGRAPH_LIBRARIES OpenSceneGraph_LIBRARIES)
+                if(DEFINED ${var_name})
+                    set(value "${${var_name}}")
+                    if(NOT "${value}" STREQUAL "")
+                        set(found TRUE)
+                        break()
+                    endif()
+                endif()
+            endforeach()
+        endif()
+
+        if(NOT found)
+            message(FATAL_ERROR
+                "Required OpenSceneGraph component \"${component}\" was not found. "
+                "Please ensure that your OpenSceneGraph installation exports the ${component} library.")
+        endif()
+    endforeach()
+endfunction()
+
+function(earth_ensure_opencv_components)
+    foreach(component IN LISTS ARGN)
+        set(found FALSE)
+        set(flag_var "OpenCV_${component}_FOUND")
+        if(DEFINED ${flag_var} AND ${flag_var})
+            set(found TRUE)
+        endif()
+
+        set(lib_var "OpenCV_${component}_LIBRARY")
+        if(DEFINED ${lib_var})
+            set(value "${${lib_var}}")
+            if(NOT "${value}" STREQUAL "")
+                set(found TRUE)
+            endif()
+        endif()
+
+        if(NOT found)
+            message(FATAL_ERROR
+                "Required OpenCV component \"${component}\" was not found. "
+                "Please make sure the module is enabled in your OpenCV package.")
+        endif()
+    endforeach()
+endfunction()
