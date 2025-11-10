@@ -115,6 +115,8 @@ add_library(earth_ui STATIC
     ui/MainWindow.cpp
     ui/MainWindow.ui
     ui/SceneWidget.cpp
+    ui/draw/MapDrawingController.cpp
+    ui/draw/MapDrawingEventHandler.cpp
 )
 target_include_directories(earth_ui PUBLIC ${EARTH_SOURCE_ROOT})
 target_link_libraries(earth_ui

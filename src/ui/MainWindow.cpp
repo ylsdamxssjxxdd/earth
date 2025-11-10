@@ -2,8 +2,10 @@
 
 #include "core/SimulationBootstrapper.h"
 #include "ui/SceneWidget.h"
+#include "ui/draw/MapDrawingController.h"
 
 #include <QAction>
+#include <QActionGroup>
 #include <QList>
 #include <QStatusBar>
 #include <QString>
@@ -86,6 +88,8 @@ void MainWindow::initializeSimulation() {
                     }
                 });
     }
+
+    ensureDrawingController();
 }
 
 void MainWindow::registerActionHandlers() {
@@ -114,7 +118,6 @@ void MainWindow::registerActionHandlers() {
         m_ui->AddVector,
         m_ui->AddPoint,
         m_ui->AddLine,
-        m_ui->AddRectangle,
         m_ui->AddPolygon,
         m_ui->AddCircle,
         m_ui->FogEffect,
@@ -131,7 +134,6 @@ void MainWindow::registerActionHandlers() {
         m_ui->Distance,
         m_ui->Area,
         m_ui->Angle,
-        m_ui->ClearAnalysis,
         m_ui->AddModel,
         m_ui->Addsatellite,
         m_ui->Tianwa,
@@ -151,6 +153,8 @@ void MainWindow::registerActionHandlers() {
     for (QAction* action : actions) {
         bindAction(action);
     }
+
+    setupDrawingActions();
 }
 
 void MainWindow::bindAction(QAction* action) {
@@ -233,8 +237,115 @@ bool MainWindow::loadEarthFile(const QString& filePath) {
         m_ui->openGLWidget->home();
         m_ui->openGLWidget->update();
     }
+
+    ensureDrawingController();
     
     return true;
+}
+
+void MainWindow::setupDrawingActions() {
+    if (!m_ui->AddPoint && !m_ui->AddLine && !m_ui->AddRectangle) {
+        return;
+    }
+
+    if (m_drawingActionGroup == nullptr) {
+        m_drawingActionGroup = new QActionGroup(this);
+        m_drawingActionGroup->setExclusive(true);
+    }
+
+    const struct DrawingEntry {
+        QAction* action = nullptr;
+        draw::DrawingTool tool = draw::DrawingTool::None;
+    } entries[] = {
+        {m_ui->AddPoint, draw::DrawingTool::Point},
+        {m_ui->AddLine, draw::DrawingTool::Polyline},
+        {m_ui->AddRectangle, draw::DrawingTool::Rectangle},
+    };
+
+    for (const DrawingEntry& entry : entries) {
+        if (!entry.action) {
+            continue;
+        }
+        entry.action->setCheckable(true);
+        if (!m_drawingActionGroup->actions().contains(entry.action)) {
+            m_drawingActionGroup->addAction(entry.action);
+        }
+        connect(entry.action, &QAction::toggled, this, [this, tool = entry.tool](bool checked) {
+            onDrawingActionToggled(tool, checked);
+        });
+    }
+
+    if (m_ui->ClearAnalysis) {
+        connect(m_ui->ClearAnalysis, &QAction::triggered, this, [this]() {
+            if (m_drawingController) {
+                m_drawingController->clearDrawings();
+                m_drawingController->setTool(draw::DrawingTool::None);
+            }
+            if (m_drawingActionGroup) {
+                for (QAction* action : m_drawingActionGroup->actions()) {
+                    if (action->isChecked()) {
+                        action->setChecked(false);
+                    }
+                }
+            }
+            if (auto* sb = statusBar()) {
+                sb->showMessage(tr("已清空绘制结果"), 4000);
+            }
+        });
+    }
+}
+
+void MainWindow::onDrawingActionToggled(draw::DrawingTool tool, bool checked) {
+    if (!m_drawingController) {
+        if (auto* sb = statusBar()) {
+            sb->showMessage(tr("绘制控制器尚未初始化"), 4000);
+        }
+        return;
+    }
+
+    auto toolLabel = [tool]() -> QString {
+        switch (tool) {
+        case draw::DrawingTool::Point:
+            return QObject::tr("点标绘");
+        case draw::DrawingTool::Polyline:
+            return QObject::tr("折线绘制");
+        case draw::DrawingTool::Rectangle:
+            return QObject::tr("矩形绘制");
+        case draw::DrawingTool::None:
+        default:
+            return QObject::tr("绘制工具");
+        }
+    };
+
+    if (checked) {
+        m_drawingController->setTool(tool);
+        if (auto* sb = statusBar()) {
+            sb->showMessage(toolLabel() + tr(" 已启用，左键单击地图开始绘制。"), 5000);
+        }
+        return;
+    }
+
+    if (m_drawingActionGroup && m_drawingActionGroup->checkedAction() != nullptr) {
+        return;
+    }
+
+    m_drawingController->setTool(draw::DrawingTool::None);
+    if (auto* sb = statusBar()) {
+        sb->showMessage(tr("已关闭绘制工具"), 3000);
+    }
+}
+
+void MainWindow::ensureDrawingController() {
+    if (!m_ui->openGLWidget) {
+        return;
+    }
+    if (!m_drawingController) {
+        m_drawingController = std::make_unique<draw::MapDrawingController>();
+    }
+    m_drawingController->attachSceneWidget(m_ui->openGLWidget);
+    if (m_bootstrapper) {
+        m_drawingController->setMapNode(m_bootstrapper->activeMapNode());
+    }
 }
 
 

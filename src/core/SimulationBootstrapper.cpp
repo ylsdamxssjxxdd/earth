@@ -90,6 +90,13 @@ void SimulationBootstrapper::buildSceneGraph() {
     rebuildSceneGraph();
 }
 
+osgEarth::MapNode* SimulationBootstrapper::activeMapNode() const {
+    if (m_activeMapNode.valid()) {
+        return m_activeMapNode.get();
+    }
+    return nullptr;
+}
+
 cv::Mat SimulationBootstrapper::buildRunwayMask(int resolution) const {
     cv::Mat mask(resolution, resolution, CV_8UC1, cv::Scalar(0));
 

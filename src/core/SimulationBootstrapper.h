@@ -52,6 +52,11 @@ public:
      */
     bool applyExternalScene(osg::Node* externalScene);
 
+    /**
+     * @brief ��¶ǰ����� MapNode���ṩ�� UI ����ģ���ٴ�װչʾ��
+     */
+    osgEarth::MapNode* activeMapNode() const;
+
 private:
     /**
      * @brief 构建默认机场场景，包含基础 MapNode 与示例跑道几何。

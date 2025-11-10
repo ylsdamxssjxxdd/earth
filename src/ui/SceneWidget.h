@@ -53,6 +53,16 @@ public:
      */
     void home();
 
+    /**
+     * @brief ��¶�ڲ� osgViewer::CompositeViewer ��ָ�룬��������չ��
+     */
+    osgViewer::CompositeViewer* viewer() const noexcept { return m_viewer.get(); }
+
+    /**
+     * @brief ��¶���� View ʵ�������Է������Զ��� osgGA �¼�������
+     */
+    osgViewer::View* embeddedView() const noexcept { return m_view.get(); }
+
 signals:
     /**
      * @brief 鼠标拾取新的经纬度时发出信号，单位为度/米。
