@@ -275,7 +275,8 @@ bool MainWindow::loadEarthFile(const QString& filePath) {
 }
 
 void MainWindow::setupDrawingActions() {
-    const bool hasDrawingActions = m_ui->AddPoint || m_ui->AddLine || m_ui->AddRectangle;
+    const bool hasDrawingActions =
+        m_ui->AddPoint || m_ui->AddLine || m_ui->AddRectangle || m_ui->AddFreehand;
 
     if (hasDrawingActions) {
         if (m_drawingActionGroup == nullptr) {
@@ -290,12 +291,14 @@ void MainWindow::setupDrawingActions() {
             {m_ui->AddPoint, draw::DrawingTool::Point},
             {m_ui->AddLine, draw::DrawingTool::Polyline},
             {m_ui->AddRectangle, draw::DrawingTool::Rectangle},
+            {m_ui->AddFreehand, draw::DrawingTool::Freehand},
         };
 
         for (const DrawingEntry& entry : entries) {
             if (!entry.action) {
                 continue;
             }
+
             entry.action->setCheckable(true);
             if (!m_drawingActionGroup->actions().contains(entry.action)) {
                 m_drawingActionGroup->addAction(entry.action);
@@ -403,7 +406,6 @@ void MainWindow::editDrawingStyle() {
     }
 }
 
-
 void MainWindow::onDrawingActionToggled(draw::DrawingTool tool, bool checked) {
     if (!m_drawingController) {
         if (auto* sb = statusBar()) {
@@ -417,9 +419,11 @@ void MainWindow::onDrawingActionToggled(draw::DrawingTool tool, bool checked) {
         case draw::DrawingTool::Point:
             return QObject::tr("点标绘");
         case draw::DrawingTool::Polyline:
-            return QObject::tr("折线绘制");
+            return QObject::tr("测距折线");
         case draw::DrawingTool::Rectangle:
-            return QObject::tr("矩形绘制");
+            return QObject::tr("矩形框选");
+        case draw::DrawingTool::Freehand:
+            return QObject::tr("自由画笔");
         case draw::DrawingTool::None:
         default:
             return QObject::tr("绘制工具");
@@ -429,7 +433,7 @@ void MainWindow::onDrawingActionToggled(draw::DrawingTool tool, bool checked) {
     if (checked) {
         m_drawingController->setTool(tool);
         if (auto* sb = statusBar()) {
-            sb->showMessage(toolLabel() + tr(" 已启用，左键单击地图开始绘制。"), 5000);
+            sb->showMessage(toolLabel() + tr(" 已启用，按住左键即可在地图上绘制。"), 5000);
         }
         return;
     }
@@ -468,3 +472,4 @@ void MainWindow::applyDrawingStyle() {
 
 
 } // namespace earth::ui
+

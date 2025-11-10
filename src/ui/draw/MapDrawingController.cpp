@@ -136,6 +136,13 @@ void MapDrawingController::pointerPress(const MapGeoPoint& point) {
     case DrawingTool::Rectangle:
         beginRectangle(point);
         break;
+    case DrawingTool::Freehand:
+        m_activeVertices.clear();
+        m_previewPoint.reset();
+        m_activeVertices.push_back(point);
+        m_freehandDrawing = true;
+        rebuildPreview();
+        break;
     default:
         break;
     }
@@ -146,7 +153,9 @@ void MapDrawingController::pointerDrag(const MapGeoPoint& point) {
         return;
     }
 
-    if (m_activeTool == DrawingTool::Rectangle && m_rectangleDragging) {
+    if (m_freehandDrawing) {
+        appendPolylineVertex(point, true);
+    } else if (m_activeTool == DrawingTool::Rectangle && m_rectangleDragging) {
         updateRectanglePreview(point);
     } else if (m_activeTool == DrawingTool::Polyline && hasActiveVertices(1)) {
         m_previewPoint = point;
@@ -159,7 +168,10 @@ void MapDrawingController::pointerRelease(const MapGeoPoint& point) {
         return;
     }
 
-    if (m_activeTool == DrawingTool::Rectangle && m_rectangleDragging) {
+    if (m_freehandDrawing) {
+        finalizePolyline();
+        m_freehandDrawing = false;
+    } else if (m_activeTool == DrawingTool::Rectangle && m_rectangleDragging) {
         finalizeRectangle(point);
     }
 }
@@ -169,7 +181,10 @@ void MapDrawingController::pointerDoubleClick(const MapGeoPoint& point) {
         return;
     }
 
-    if (m_activeTool == DrawingTool::Polyline) {
+    if (m_freehandDrawing) {
+        finalizePolyline();
+        m_freehandDrawing = false;
+    } else if (m_activeTool == DrawingTool::Polyline) {
         appendPolylineVertex(point);
         finalizePolyline();
     } else if (m_activeTool == DrawingTool::Rectangle && m_rectangleDragging) {
@@ -179,6 +194,10 @@ void MapDrawingController::pointerDoubleClick(const MapGeoPoint& point) {
 
 void MapDrawingController::pointerMove(const MapGeoPoint& point) {
     if (!m_interactionEnabled) {
+        return;
+    }
+
+    if (m_freehandDrawing) {
         return;
     }
 
@@ -282,6 +301,7 @@ void MapDrawingController::resetActivePrimitive() {
     m_activeVertices.clear();
     m_previewPoint.reset();
     m_rectangleDragging = false;
+    m_freehandDrawing = false;
     if (m_previewNode.valid() && m_root.valid()) {
         m_root->removeChild(m_previewNode.get());
         m_previewNode = nullptr;
@@ -297,10 +317,13 @@ void MapDrawingController::addPointPrimitive(const MapGeoPoint& point) {
     commitPrimitive(primitive);
 }
 
-void MapDrawingController::appendPolylineVertex(const MapGeoPoint& point) {
+void MapDrawingController::appendPolylineVertex(const MapGeoPoint& point, bool forceSample) {
+    const double minDistance =
+        forceSample ? kMinSampleDistanceMeters * 0.25 : kMinSampleDistanceMeters;
+
     if (!m_activeVertices.empty()) {
         const MapGeoPoint& last = m_activeVertices.back();
-        if (distanceMeters(last, point) < kMinSampleDistanceMeters) {
+        if (distanceMeters(last, point) < minDistance) {
             return;
         }
     }

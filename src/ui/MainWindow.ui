@@ -337,6 +337,7 @@ QWidget{
     </property>
     <addaction name="AddPoint"/>
     <addaction name="AddLine"/>
+    <addaction name="AddFreehand"/>
     <addaction name="AddRectangle"/>
     <addaction name="AddPolygon"/>
     <addaction name="AddCircle"/>
@@ -953,7 +954,15 @@ QWidget{
      <normaloff>:/ui/icons/线.png</normaloff>:/ui/icons/线.png</iconset>
    </property>
    <property name="text">
-    <string>线</string>
+   <string>线</string>
+  </property>
+ </action>
+  <action name="AddFreehand">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>自由画笔</string>
    </property>
   </action>
   <action name="AddRectangle">

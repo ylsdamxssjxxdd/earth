@@ -18,9 +18,10 @@ struct MapGeoPoint {
  */
 enum class DrawingTool {
     None = 0, /**< 未激活绘制工具。 */
-    Point,    /**< 单点采样。 */
+    Point,    /**< 单点采样/标注。 */
     Polyline, /**< 折线/测距工具。 */
-    Rectangle /**< 矩形/范围框工具。 */
+    Rectangle, /**< 矩形/范围框工具。 */
+    Freehand /**< 自由画笔/手绘轨迹。 */
 };
 
 /**

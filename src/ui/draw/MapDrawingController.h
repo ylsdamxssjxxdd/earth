@@ -86,7 +86,7 @@ private:
     void resetActivePrimitive();
 
     void addPointPrimitive(const MapGeoPoint& point);
-    void appendPolylineVertex(const MapGeoPoint& point);
+    void appendPolylineVertex(const MapGeoPoint& point, bool forceSample = false);
     void finalizePolyline();
     void beginRectangle(const MapGeoPoint& anchor);
     void updateRectanglePreview(const MapGeoPoint& current);
@@ -116,6 +116,7 @@ private:
     DrawingTool m_activeTool = DrawingTool::None;
     bool m_interactionEnabled = false;
     bool m_rectangleDragging = false;
+    bool m_freehandDrawing = false;
 
     osg::ref_ptr<const osgEarth::SpatialReference> m_wgs84;
     ColorRgba m_strokeColor { 0.97F, 0.58F, 0.20F, 1.0F };
