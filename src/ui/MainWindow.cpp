@@ -6,17 +6,48 @@
 
 #include <QAction>
 #include <QActionGroup>
+#include <QColorDialog>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QDoubleSpinBox>
+#include <QFileDialog>
+#include <QFormLayout>
+#include <QLabel>
 #include <QList>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QStatusBar>
 #include <QString>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QLabel>
+#include <QVBoxLayout>
+
+#include <algorithm>
+#include <cmath>
 
 #include <osgEarth/MapNode>
 #include <osgDB/ReadFile>
 
 #include "ui_MainWindow.h"
+
+namespace {
+using ColorRgba = earth::ui::draw::ColorRgba;
+
+ColorRgba toRgba(const QColor& color) {
+    return {
+        static_cast<float>(color.redF()),
+        static_cast<float>(color.greenF()),
+        static_cast<float>(color.blueF()),
+        static_cast<float>(color.alphaF())
+    };
+}
+
+QColor toQColor(const ColorRgba& color) {
+    return QColor::fromRgbF(
+        std::clamp(color.r, 0.0F, 1.0F),
+        std::clamp(color.g, 0.0F, 1.0F),
+        std::clamp(color.b, 0.0F, 1.0F),
+        std::clamp(color.a, 0.0F, 1.0F));
+}
+} // namespace
 
 namespace earth::ui {
 
@@ -244,35 +275,35 @@ bool MainWindow::loadEarthFile(const QString& filePath) {
 }
 
 void MainWindow::setupDrawingActions() {
-    if (!m_ui->AddPoint && !m_ui->AddLine && !m_ui->AddRectangle) {
-        return;
-    }
+    const bool hasDrawingActions = m_ui->AddPoint || m_ui->AddLine || m_ui->AddRectangle;
 
-    if (m_drawingActionGroup == nullptr) {
-        m_drawingActionGroup = new QActionGroup(this);
-        m_drawingActionGroup->setExclusive(true);
-    }
-
-    const struct DrawingEntry {
-        QAction* action = nullptr;
-        draw::DrawingTool tool = draw::DrawingTool::None;
-    } entries[] = {
-        {m_ui->AddPoint, draw::DrawingTool::Point},
-        {m_ui->AddLine, draw::DrawingTool::Polyline},
-        {m_ui->AddRectangle, draw::DrawingTool::Rectangle},
-    };
-
-    for (const DrawingEntry& entry : entries) {
-        if (!entry.action) {
-            continue;
+    if (hasDrawingActions) {
+        if (m_drawingActionGroup == nullptr) {
+            m_drawingActionGroup = new QActionGroup(this);
+            m_drawingActionGroup->setExclusive(true);
         }
-        entry.action->setCheckable(true);
-        if (!m_drawingActionGroup->actions().contains(entry.action)) {
-            m_drawingActionGroup->addAction(entry.action);
+
+        const struct DrawingEntry {
+            QAction* action = nullptr;
+            draw::DrawingTool tool = draw::DrawingTool::None;
+        } entries[] = {
+            {m_ui->AddPoint, draw::DrawingTool::Point},
+            {m_ui->AddLine, draw::DrawingTool::Polyline},
+            {m_ui->AddRectangle, draw::DrawingTool::Rectangle},
+        };
+
+        for (const DrawingEntry& entry : entries) {
+            if (!entry.action) {
+                continue;
+            }
+            entry.action->setCheckable(true);
+            if (!m_drawingActionGroup->actions().contains(entry.action)) {
+                m_drawingActionGroup->addAction(entry.action);
+            }
+            connect(entry.action, &QAction::toggled, this, [this, tool = entry.tool](bool checked) {
+                onDrawingActionToggled(tool, checked);
+            });
         }
-        connect(entry.action, &QAction::toggled, this, [this, tool = entry.tool](bool checked) {
-            onDrawingActionToggled(tool, checked);
-        });
     }
 
     if (m_ui->ClearAnalysis) {
@@ -293,7 +324,85 @@ void MainWindow::setupDrawingActions() {
             }
         });
     }
+
+    if (m_ui->DrawingStyle) {
+        connect(m_ui->DrawingStyle, &QAction::triggered, this, &MainWindow::editDrawingStyle);
+    }
 }
+
+
+void MainWindow::editDrawingStyle() {
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("画笔样式"));
+    dialog.setModal(true);
+
+    auto* layout = new QVBoxLayout(&dialog);
+    auto* form = new QFormLayout();
+    layout->addLayout(form);
+
+    QColor previewColor = toQColor(m_penColor);
+    auto* colorButton = new QPushButton();
+    colorButton->setAutoDefault(false);
+
+    const auto updateColorButton = [colorButton](const QColor& color) {
+        const QString colorName = color.name(QColor::HexRgb).toUpper();
+        const double luminance = 0.299 * color.redF() + 0.587 * color.greenF() + 0.114 * color.blueF();
+        const QColor textColor = luminance > 0.6 ? QColor(Qt::black) : QColor(Qt::white);
+        colorButton->setText(colorName);
+        colorButton->setStyleSheet(QStringLiteral("background-color:%1; color:%2;")
+                                       .arg(colorName, textColor.name(QColor::HexRgb)));
+    };
+    updateColorButton(previewColor);
+
+    connect(colorButton, &QPushButton::clicked, this, [&dialog, &previewColor, updateColorButton]() {
+        const QColor chosen = QColorDialog::getColor(previewColor, &dialog, dialog.tr("选择颜色"));
+        if (chosen.isValid()) {
+            previewColor = chosen;
+            updateColorButton(previewColor);
+        }
+    });
+
+    auto* thicknessSpin = new QDoubleSpinBox();
+    thicknessSpin->setRange(1.0, 20.0);
+    thicknessSpin->setDecimals(1);
+    thicknessSpin->setSingleStep(0.5);
+    thicknessSpin->setValue(m_penThickness);
+    thicknessSpin->setSuffix(tr(" px"));
+
+    form->addRow(tr("颜色"), colorButton);
+    form->addRow(tr("线宽"), thicknessSpin);
+
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    layout->addWidget(buttons);
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    const bool colorChanged = previewColor != toQColor(m_penColor);
+    const double newThickness = thicknessSpin->value();
+    const bool thicknessChanged = std::abs(newThickness - m_penThickness) > 0.01;
+
+    if (!colorChanged && !thicknessChanged) {
+        return;
+    }
+
+    if (colorChanged) {
+        m_penColor = toRgba(previewColor);
+    }
+    if (thicknessChanged) {
+        m_penThickness = newThickness;
+    }
+
+    applyDrawingStyle();
+
+    if (auto* sb = statusBar()) {
+        sb->showMessage(tr("已更新画笔颜色与粗细"), 4000);
+    }
+}
+
 
 void MainWindow::onDrawingActionToggled(draw::DrawingTool tool, bool checked) {
     if (!m_drawingController) {
@@ -346,6 +455,15 @@ void MainWindow::ensureDrawingController() {
     if (m_bootstrapper) {
         m_drawingController->setMapNode(m_bootstrapper->activeMapNode());
     }
+    applyDrawingStyle();
+}
+
+void MainWindow::applyDrawingStyle() {
+    if (!m_drawingController) {
+        return;
+    }
+    m_drawingController->setStrokeColor(m_penColor);
+    m_drawingController->setStrokeThickness(static_cast<float>(m_penThickness));
 }
 
 

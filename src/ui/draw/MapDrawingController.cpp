@@ -28,10 +28,16 @@
 
 namespace {
 constexpr double kMinSampleDistanceMeters = 1.0;
-constexpr float kDefaultStrokeWidthPx = 3.0F;
+constexpr float kDefaultStrokeWidthPx = 4.0F;
 constexpr float kPreviewAlphaScale = 0.65F;
-const earth::ui::draw::ColorRgba kStrokeColor{0.97F, 0.58F, 0.20F, 1.0F};
-const earth::ui::draw::ColorRgba kFillColor{0.18F, 0.45F, 0.87F, 1.0F};
+constexpr float kMinStrokeThickness = 1.0F;
+constexpr float kMaxStrokeThickness = 20.0F;
+constexpr float kPointSizeFactor = 2.4F;
+constexpr float kMinPointPixelSize = 8.0F;
+
+earth::ui::draw::ColorRgba defaultStrokeColor() {
+    return {0.97F, 0.58F, 0.20F, 1.0F};
+}
 
 osgEarth::Color toOsgColor(const earth::ui::draw::ColorRgba& color, float alphaScale = 1.0F) {
     const float alpha = std::clamp(color.a * alphaScale, 0.0F, 1.0F);
@@ -44,6 +50,8 @@ namespace earth::ui::draw {
 MapDrawingController::MapDrawingController() {
     ensureRoot();
     m_wgs84 = osgEarth::SpatialReference::get("wgs84");
+    m_strokeColor = defaultStrokeColor();
+    m_strokeThickness = kDefaultStrokeWidthPx;
 }
 
 MapDrawingController::~MapDrawingController() {
@@ -89,6 +97,20 @@ void MapDrawingController::setTool(DrawingTool tool) {
     m_activeTool = tool;
     m_interactionEnabled = (tool != DrawingTool::None);
     resetActivePrimitive();
+}
+
+void MapDrawingController::setStrokeColor(ColorRgba color) noexcept {
+    m_strokeColor = color;
+    rebuildPreview();
+}
+
+void MapDrawingController::setStrokeThickness(float thickness) noexcept {
+    const float clamped = std::clamp(thickness, kMinStrokeThickness, kMaxStrokeThickness);
+    if (std::abs(clamped - m_strokeThickness) < 0.01F) {
+        return;
+    }
+    m_strokeThickness = clamped;
+    rebuildPreview();
 }
 
 void MapDrawingController::clearDrawings() {
@@ -230,8 +252,8 @@ void MapDrawingController::rebuildPreview() {
     }
 
     PrimitiveDefinition primitive;
-    primitive.strokeColor = kStrokeColor;
-    primitive.thicknessPixels = kDefaultStrokeWidthPx;
+    primitive.strokeColor = m_strokeColor;
+    primitive.thicknessPixels = m_strokeThickness;
 
     std::optional<MapGeoPoint> previewPoint;
 
@@ -243,7 +265,7 @@ void MapDrawingController::rebuildPreview() {
         primitive.type = PrimitiveType::Polygon;
         primitive.vertices = buildRectangleVertices(m_activeVertices.front(), m_previewPoint.value());
         primitive.filled = true;
-        primitive.strokeColor = kFillColor;
+        primitive.strokeColor = m_strokeColor;
         primitive.fillOpacity = 0.28;
     } else {
         return;
@@ -270,8 +292,8 @@ void MapDrawingController::addPointPrimitive(const MapGeoPoint& point) {
     PrimitiveDefinition primitive;
     primitive.type = PrimitiveType::Point;
     primitive.vertices = {point};
-    primitive.strokeColor = kStrokeColor;
-    primitive.thicknessPixels = kDefaultStrokeWidthPx * 2.0;
+    primitive.strokeColor = m_strokeColor;
+    primitive.thicknessPixels = std::max(static_cast<double>(m_strokeThickness), 1.0) * 1.6;
     commitPrimitive(primitive);
 }
 
@@ -295,8 +317,8 @@ void MapDrawingController::finalizePolyline() {
     PrimitiveDefinition primitive;
     primitive.type = PrimitiveType::Polyline;
     primitive.vertices = m_activeVertices;
-    primitive.strokeColor = kStrokeColor;
-    primitive.thicknessPixels = kDefaultStrokeWidthPx;
+    primitive.strokeColor = m_strokeColor;
+    primitive.thicknessPixels = m_strokeThickness;
     commitPrimitive(primitive);
     resetActivePrimitive();
 }
@@ -334,10 +356,10 @@ void MapDrawingController::finalizeRectangle(const MapGeoPoint& current, bool fo
     PrimitiveDefinition primitive;
     primitive.type = PrimitiveType::Polygon;
     primitive.vertices = buildRectangleVertices(m_activeVertices.front(), current);
-    primitive.strokeColor = kFillColor;
+    primitive.strokeColor = m_strokeColor;
     primitive.filled = true;
     primitive.fillOpacity = 0.35;
-    primitive.thicknessPixels = kDefaultStrokeWidthPx;
+    primitive.thicknessPixels = m_strokeThickness;
 
     commitPrimitive(primitive);
     resetActivePrimitive();
@@ -412,7 +434,8 @@ osg::ref_ptr<osgEarth::FeatureNode> MapDrawingController::createNode(
 
     if (primitive.type == PrimitiveType::Point) {
         osgEarth::PointSymbol* point = style.getOrCreate<osgEarth::PointSymbol>();
-        point->size() = std::max(static_cast<float>(primitive.thicknessPixels) * 2.0F, 6.0F);
+        const float targetSize = static_cast<float>(primitive.thicknessPixels) * kPointSizeFactor;
+        point->size() = std::max(targetSize, kMinPointPixelSize);
         point->fill()->color() = strokeColor;
         point->smooth() = true;
     } else {

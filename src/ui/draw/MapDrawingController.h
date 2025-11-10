@@ -57,6 +57,14 @@ public:
     [[nodiscard]] bool interactionEnabled() const noexcept { return m_interactionEnabled; }
 
     /**
+     * @brief 统一设置当前绘制笔刷的颜色与粗细。
+     */
+    void setStrokeColor(ColorRgba color) noexcept;
+    [[nodiscard]] ColorRgba strokeColor() const noexcept { return m_strokeColor; }
+    void setStrokeThickness(float thickness) noexcept;
+    [[nodiscard]] float strokeThickness() const noexcept { return m_strokeThickness; }
+
+    /**
      * @brief 清空已提交的贴地图形，并复位预览。
      */
     void clearDrawings();
@@ -110,6 +118,8 @@ private:
     bool m_rectangleDragging = false;
 
     osg::ref_ptr<const osgEarth::SpatialReference> m_wgs84;
+    ColorRgba m_strokeColor { 0.97F, 0.58F, 0.20F, 1.0F };
+    float m_strokeThickness = 4.0F;
 };
 
 } // namespace earth::ui::draw

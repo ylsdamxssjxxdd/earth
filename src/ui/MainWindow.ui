@@ -340,6 +340,7 @@ QWidget{
     <addaction name="AddRectangle"/>
     <addaction name="AddPolygon"/>
     <addaction name="AddCircle"/>
+    <addaction name="DrawingStyle"/>
     <addaction name="StraightArrow"/>
     <addaction name="DoubleArrow"/>
     <addaction name="DiagonalArrow"/>
@@ -733,6 +734,11 @@ QWidget{
   <action name="SetLosHeight">
    <property name="text">
     <string>设置视高</string>
+   </property>
+  </action>
+  <action name="DrawingStyle">
+   <property name="text">
+    <string>画笔样式</string>
    </property>
   </action>
   <action name="ViewshedPara">
